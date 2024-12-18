@@ -3,6 +3,7 @@
 import {
 	createContext,
 	useContext,
+	useEffect,
 	useState,
 	type PropsWithChildren,
 } from 'react';
@@ -15,12 +16,19 @@ interface FavoriteMoviesContextValue {
 	removeFavoriteMovie: (movie: MovieGeneralInfo) => void;
 }
 
+const isServer = typeof window === 'undefined';
+
 const FavoriteMoviesContext = createContext<
 	FavoriteMoviesContextValue | undefined
 >(undefined);
 
 export const FavoriteMoviesProvider = ({ children }: PropsWithChildren) => {
-	const [favoriteMovies, setFavoriteMovies] = useState<MovieGeneralInfo[]>(() => {
+	const [favoriteMovies, setFavoriteMovies] = useState<MovieGeneralInfo[]>([]);
+
+	const initializeFavoriteMovies = () => {
+		if (isServer) {
+			return [];
+		}
 		try {
 			const favoriteMovies = localStorage.getItem('favoriteMovies');
 			return favoriteMovies ? JSON.parse(favoriteMovies) : [];
@@ -29,7 +37,13 @@ export const FavoriteMoviesProvider = ({ children }: PropsWithChildren) => {
 
 			return [];
 		}
-	});
+	};
+
+	useEffect(() => {
+		if (!isServer) {
+			setFavoriteMovies(initializeFavoriteMovies());
+		}
+	}, []);
 
 	const addFavoriteMovie = (movie: MovieGeneralInfo) => {
 		setFavoriteMovies(prev => [...prev, movie]);
